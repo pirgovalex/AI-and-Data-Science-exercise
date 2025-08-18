@@ -10,50 +10,74 @@ class Matrix:
             raise ValueError("Input must be a numpy array")
         self.array = array
 
+    def auto_print(func):
+        def wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
+            print(f"{func.__name__} returned: {result} (type: {type(result)})")
+            return result
+        return wrapper
+
+    def __array__(self):
+        return self.array
+
+    def __repr__(self):
+        return f"Matrix({self.array})"
+    
+    def __str__(self):
+        return str(f" self.array ")
+    
+    @auto_print    
     def add(self, other) :
         if self.array.shape != other.array.shape:
             raise ValueError("Matrices must have the same shape for addition")
-        return self.array + other.array
-
+        return Matrix(self.array + other.array)
+    
+    @auto_print
     def subtract(self, other):
         if self.array.shape != other.array.shape:
             raise ValueError("Matrices must have the same shape for subtraction")
-        return self.array - other.array
-
+        return Matrix(self.array - other.array)
+    @auto_print
     def multiply(self, other):
         if self.array.shape[1] != other.array.shape[0]:
             raise ValueError("Number of columns of first matrix must equal number of rows of second")
-        return np.dot(self.array, other.array)
+        return Matrix(np.dot(self.array, other.array))
 
+    @auto_print
     def transpose(self):
-        return self.array.T
-
+        return Matrix(self.array.T)
+    
+    @auto_print
     def inverse(self):
         if self.array.shape[0] != self.array.shape[1]:
             raise ValueError("Matrix must be square to calculate inverse")
         if np.linalg.det(self.array) == 0:
             raise ValueError("Matrix is singular and cannot be inverted")
-        return np.linalg.inv(self.array)
-
+        return Matrix(np.linalg.inv(self.array))
+    
+    @auto_print
     def determinant(self):
         if self.array.shape[0] != self.array.shape[1]:
             raise ValueError("Matrix must be square to calculate determinant")
         return np.linalg.det(self.array)
-
+    
+    @auto_print
     def rank(self):
         return np.linalg.matrix_rank(self.array)
-
+    @auto_print
     def eigen(self):
         if self.array.shape[0] != self.array.shape[1]:
             raise ValueError("Matrix must be square to calculate eigenvalues")
         return np.linalg.eig(self.array)
 
+    @auto_print
     @staticmethod
     def solve(A, b):
+        b= b.reshape(-1, 1) if b.ndim == 1 else b
         if A.shape[0] != b.shape[0]:
             raise ValueError("Number of rows in A must equal number of rows in b")
         try:
-            return np.linalg.solve(A, b)
+            return Matrix(np.linalg.solve(A, b))
         except np.linalg.LinAlgError:
             # least squares if the system is not solvable or is overdetermined
             return np.linalg.lstsq(A, b, rcond=None)[0]
@@ -67,9 +91,12 @@ def load_matrix_from_csv(file_path):
         raise ValueError(f"Error reading {file_path}: {e}")
 
 def save_matrix_to_csv(matrix, output_path):
+    if isinstance(matrix, Matrix):
+        matrix = matrix.array
+    matrix = np.atleast_2d(matrix)
     pd.DataFrame(matrix).to_csv(output_path, index=False, header=False)
 
-def main():
+def main()->None:
     parser = argparse.ArgumentParser(description="Matrix Calculator CLI")
     parser.add_argument('--operation', type=str, required=True,
                         choices=['add', 'sub', 'dot', 'transpose', 'inverse',
@@ -103,7 +130,7 @@ def main():
     elif args.operation == 'inverse':
         result = matrix_A.inverse()
     elif args.operation == 'det':
-        result = [[matrix_A.determinant()]]
+        result = matrix_A.determinant()
     elif args.operation == 'rank':
         result = [[matrix_A.rank()]]
     elif args.operation == 'solve':
@@ -113,10 +140,7 @@ def main():
         values, vectors = matrix_A.eigen()
         save_matrix_to_csv(values.reshape(1, -1), args.output.replace('.csv', '_values.csv'))
         save_matrix_to_csv(vectors, args.output.replace('.csv', '_vectors.csv'))
-        print(f"Eigenvalues and eigenvectors saved as {
-            args.output.replace('.csv', '_values.csv')
-            } and {
-            args.output.replace('.csv', '_vectors.csv')}")
+        print(f"Eigenvalues and eigenvectors saved as {args.output.replace('.csv', '_values.csv')} and {args.output.replace('.csv', '_vectors.csv')}")
         sys.exit(0)
 
     save_matrix_to_csv(result, args.output)
