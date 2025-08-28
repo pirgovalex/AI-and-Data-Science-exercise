@@ -158,6 +158,7 @@ def test_neural_network_2():
     save_output(out, preds)
     for i in range( A2.shape[1]):  #
         print(f"Sample {i+1}: Probability={A2[0,i]:.4f}, Predicted={preds[0,i]}, Actual={Y_test.values[i,0]}")
+
 X_train, Y_train, X_test, Y_test = load_file_split()
 X_train = (X_train - X_train.mean()) / X_train.std()
 X_test  = (X_test - X_test.mean()) / X_test.std()
